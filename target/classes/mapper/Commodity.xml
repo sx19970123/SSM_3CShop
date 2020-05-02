@@ -1,0 +1,554 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dfbz.mapper.CommodityMapper">
+
+
+    <!--管理员登录-->
+    <select id="AdminLogin" resultType="ad_admin">
+
+       SELECT
+           ad_admin.ADMIN_ID,
+           ad_admin.ADMIN_PASS,
+           ad_admin.ADMIN_NAME,
+           ad_control.CONTROL_ID,
+           ad_role.ROLE_NAME,
+           ad_role.ROLE_ID
+       FROM
+           ad_admin
+       INNER JOIN ad_control ON ad_control.ADMIN_ID = ad_admin.ADMIN_ID
+       INNER JOIN ad_role ON ad_control.ROLE_ID = ad_role.ROLE_ID
+       WHERE
+           ad_admin.ADMIN_ID=#{admin_id}
+       AND
+           ad_admin.ADMIN_PASS=#{admin_pass}
+
+    </select>
+
+    <!--查询全部管理员（已设置权限）-->
+    <select id="AllAdmin" resultType="ad_admin">
+
+        SELECT
+            ad_admin.ADMIN_ID,
+            ad_admin.ADMIN_NAME,
+            ad_role.ROLE_NAME
+        FROM
+            ad_admin
+        INNER JOIN ad_control ON ad_control.ADMIN_ID = ad_admin.ADMIN_ID
+        INNER JOIN ad_role ON ad_control.ROLE_ID = ad_role.ROLE_ID
+
+    </select>
+
+    <!--查询全部管理员（未设置权限）-->
+    <select id="AllAdminNoRole" resultType="ad_admin">
+
+        SELECT
+	        ad_admin.ADMIN_ID,
+	        ad_admin.ADMIN_NAME
+        FROM
+	         ad_admin
+        WHERE
+	         ADMIN_ID
+	    NOT IN (
+		SELECT
+			ADMIN_ID
+		FROM
+			ad_control
+	    )
+
+    </select>
+
+    <!--删除管理员-->
+    <delete id="DelAdmin" parameterType="int">
+
+        delete from ad_admin where ADMIN_ID=#{ad_admin}
+
+    </delete>
+
+
+    <!--查询全部权限-->
+    <select id="AllRole" resultType="ad_role">
+
+        select * from ad_role
+
+    </select>
+
+    <!--添加管理员-->
+
+    <insert id="AddAdmin" parameterType="ad_admin">
+
+        insert into ad_admin set ADMIN_PASS=#{admin_pass},ADMIN_NAME=#{admin_name}
+
+    </insert>
+
+    <!--根据ID查询用户(未设置权限)-->
+    <select id="AdminById" resultType="ad_admin">
+       SELECT
+	        ad_admin.ADMIN_ID,
+	        ad_admin.ADMIN_NAME
+       FROM
+	         ad_admin
+       WHERE
+	         ADMIN_ID
+	   NOT IN (
+	   SELECT
+			ADMIN_ID
+	   FROM
+			ad_control
+	    )
+       AND ADMIN_ID=#{admin_id}
+    </select>
+
+    <!--根据ID查询用户（已设置权限）-->
+    <select id="RoleAdminById" resultType="ad_admin">
+
+        SELECT
+            ad_admin.ADMIN_ID,
+            ad_admin.ADMIN_NAME,
+            ad_role.ROLE_NAME,
+            ad_role.ROLE_ID,
+            ad_control.CONTROL_ID
+        FROM
+            ad_admin
+        INNER JOIN ad_control ON ad_control.ADMIN_ID = ad_admin.ADMIN_ID
+        INNER JOIN ad_role ON ad_control.ROLE_ID = ad_role.ROLE_ID
+        where
+             ad_admin.ADMIN_ID=#{admin_id}
+
+    </select>
+
+    <!--修改用户信息-->
+    <update id="AdminModify" parameterType="ad_admin">
+
+        update ad_admin set ADMIN_PASS=#{admin_pass},ADMIN_NAME=#{admin_name} where ADMIN_ID=#{admin_id}
+
+    </update>
+
+    <!--修改用户权限-->
+    <update id="RoleModify" parameterType="ad_control">
+
+        update ad_control set ROLE_ID=#{role_id},ADMIN_ID=#{admin_id} WHERE CONTROL_ID=#{control_id}
+
+    </update>
+
+    <!--添加用户权限-->
+    <insert id="RoleAdd" parameterType="ad_control">
+
+        insert into ad_control set ROLE_ID=#{role_id},ADMIN_ID=#{admin_id}
+
+    </insert>
+
+    <!--删除用户权限-->
+    <delete id="RoleDes" parameterType="int">
+
+        delete from ad_control where CONTROL_ID=#{control_id}
+
+    </delete>
+
+    <!--查询全部用户-->
+
+    <select id="AllUser" resultType="user">
+         SELECT
+	        a.*, GROUP_CONCAT(c.COMMODITY_BRAND,c.COMMODITY_NAME) cname
+        FROM
+	        `user` a
+        LEFT JOIN cart b ON a.USER_ID = b.USER_ID
+        LEFT JOIN commodity c ON c.COMMODITY_ID = b.COMMODITY_ID
+        GROUP BY
+	        a.USER_ID
+    </select>
+
+    <!--查询全部商品-->
+    <select id="ALLCommodity" resultType="commodity">
+
+        SELECT * from commodity
+
+        <where>
+            <if test="commodity_category_id!=0">
+                and COMMODITY_CATEGORY_ID = #{commodity_category_id}
+            </if>
+        </where>
+    </select>
+
+    <!--添加颜色-->
+    <insert id="AddColor" parameterType="color">
+
+            insert into color (COMMODITY_ID,COLOR)values (#{commodity_id},#{color})
+
+    </insert>
+
+    <!--添加内存/价格-->
+    <insert id="AddDisk" parameterType="size">
+
+        insert into disk (COMMODITY_ID,DISK,PRICE) values (#{commodity_id},#{disk},#{price})
+
+    </insert>
+
+    <!--查询产品分类-->
+    <select id="AllCategory" resultType="category">
+
+        select * from category
+
+    </select>
+
+    <!--数量-->
+    <select id="Count" resultType="int">
+
+        SELECT COUNT(*) from commodity
+
+    </select>
+
+    <!--全部待发货-->
+    <select id="AllNofa" resultType="cart">
+
+         SELECT
+	        commodity.COMMODITY_NAME,
+	        commodity.COMMODITY_ID,
+	        commodity.COMMODITY_BRAND,
+	        commodity.COMMODITY_PHOTO1,
+	        cart.CART_ID,
+	        cart.COMMODITY_SIZE,
+	        cart.COMMODITY_PRICE,
+	        address.`NAME`,
+	        address.ADDRESS,
+	        address.USER_PHONE,
+	        cart.STATE,
+	        cart.COURIER_NUM,
+	        cart.NUM,
+	color.COLOR as commodity_color
+        FROM
+	cart
+        INNER JOIN commodity ON cart.COMMODITY_ID = commodity.COMMODITY_ID
+        INNER JOIN address ON cart.ADDRESS_ID = address.ADDRESS_ID
+        INNER JOIN color ON color.COMMODITY_ID = commodity.COMMODITY_ID
+        AND cart.COMMODITY_COLOR = color.CID
+        WHERE
+        cart.ADDRESS_ID IS NOT NULL
+        AND cart.STATE = 1
+        AND cart.STATE2 IS NULL
+
+    </select>
+
+    <!--查询全部待付款-->
+    <select id="allNoPay" resultType="cart">
+        SELECT
+	        commodity.COMMODITY_NAME,
+	        commodity.COMMODITY_ID,
+	        commodity.COMMODITY_BRAND,
+	        commodity.COMMODITY_PHOTO1,
+	        cart.CART_ID,
+	        cart.USER_ID,
+	        cart.COMMODITY_SIZE,
+	        cart.COMMODITY_PRICE,
+	        address.`NAME`,
+	        address.ADDRESS,
+	        address.USER_PHONE,
+	        cart.STATE,
+	        cart.COURIER_NUM,
+	        cart.NUM,
+	color.COLOR as commodity_color
+        FROM
+	cart
+        INNER JOIN commodity ON cart.COMMODITY_ID = commodity.COMMODITY_ID
+        INNER JOIN address ON cart.ADDRESS_ID = address.ADDRESS_ID
+        INNER JOIN color ON color.COMMODITY_ID = commodity.COMMODITY_ID
+        AND cart.COMMODITY_COLOR = color.CID
+        WHERE
+        cart.ADDRESS_ID IS NOT NULL
+        AND cart.STATE = 6
+        AND cart.STATE2 IS NULL
+
+    </select>
+
+    <!--发货-->
+    <update id="FA" parameterType="cart">
+
+        update cart set STATE2=#{state},COURIER_NUM=#{courier_num} where CART_ID=#{cart_id}
+
+    </update>
+
+    <!--根据B_C表BID,CID查询分类下有无品牌-->
+    <select id="BrandName" resultType="brand">
+
+    SELECT
+        brand.BRAND_NAME
+    FROM
+        brand
+    INNER JOIN b_c ON b_c.BRAND_ID = brand.BRAND_ID
+    WHERE
+    b_c.BRAND_ID = #{brand_id} AND
+    b_c.CATEGORY_ID = #{category_id}
+
+
+    </select>
+
+    <!--根据品牌ID查询品牌-->
+    <select id="BrandId" resultType="brand">
+
+    SELECT
+        brand.BRAND_ID
+    FROM
+        brand
+    WHERE
+        brand.BRAND_NAME = #{brand_name}
+
+    </select>
+
+    <!--添加品牌-->
+    <insert id="AddBrand" parameterType="brand">
+
+        insert into brand set BRAND_NAME=#{brand_name}
+
+    </insert>
+
+    <!--添加到B_C-->
+    <insert id="AddB_C" parameterType="int">
+
+        insert into b_c set BRAND_ID=#{brand_id},CATEGORY_ID=#{category_id}
+
+    </insert>
+
+    <!--查询商品类别-->
+    <select id="CategoryById" resultType="category">
+
+        select CATEGORY_NAME from category where CATEGORY_ID=#{category_id}
+
+    </select>
+
+    <!--添加商品基本信息-->
+    <insert id="AddCommodity" parameterType="commodity">
+
+    INSERT INTO commodity
+        (COMMODITY_NAME,COMMODITY_PRICE,COMMODITY_CATEGORY_ID,COMMODITY_CATEGORY,COMMODITY_BRAND_ID,COMMODITY_BRAND,COMMODITY_PHOTO1,COMMODITY_PHOTO2,COMMODITY_PHOTO3,COMMODITY_COUNT)
+    VALUES
+        (#{commodity_name},#{commodity_price},#{commodity_category_id},#{commodity_category},#{commodity_brand_id},#{commodity_brand},#{commodity_photo1},#{commodity_photo2},#{commodity_photo3},#{commodity_count})
+
+    </insert>
+
+    <!--根据商品名称查询商品-->
+    <select id="CommodityByName" resultType="commodity">
+
+        select * from commodity where COMMODITY_NAME=#{commodity_name}
+
+    </select>
+
+    <!--添加商品详情图-->
+    <insert id="AddCommodityPhoto" parameterType="describe">
+
+        insert into `describe` (COMMODITY_ID,COMMODITY_DESCRIBE)values (#{commodity_id},#{commodity_describe})
+
+    </insert>
+
+    <!--删除商品（详情图）-->
+    <delete id="DelPhoto" parameterType="int">
+
+        delete from `describe` where COMMODITY_ID=#{commodity_id}
+
+    </delete>
+
+    <!--删除商品（可选颜色）-->
+    <delete id="DelColor" parameterType="int">
+
+        delete from color where COMMODITY_ID=#{commodity_id}
+
+    </delete>
+
+    <!--删除商品（内存和价格）-->
+    <delete id="DelDisk" parameterType="int">
+
+        delete from disk where COMMODITY_ID=#{commodity_id}
+
+    </delete>
+
+    <delete id="delPhotos" parameterType="int">
+
+        delete from `describe` where COMMODITY_ID=#{commodity_id}
+
+    </delete>
+
+    <!--删除商品-->
+    <delete id="DelCommodity" parameterType="int">
+
+        delete from commodity where COMMODITY_ID=#{commodity_id}
+
+    </delete>
+
+
+    <!--查询CATR-->
+    <select id="FindCartById" resultType="cart">
+
+        select * from cart where  COMMODITY_ID=#{commodity_id}
+
+    </select>
+
+    <!--查询商品（可选颜色）-->
+    <select id="ColorById" resultType="color">
+
+        select * from color where COMMODITY_ID=#{commodity_id}
+
+    </select>
+
+    <!--查询商品（内存和价格）-->
+    <select id="DiskById" resultType="size">
+
+        select * from disk where COMMODITY_ID=#{commodity_id}
+
+    </select>
+
+    <!--查询商品-->
+    <select id="CommodityById" resultType="commodity">
+
+        select * from commodity where COMMODITY_ID=#{commodity_id}
+
+    </select>
+
+    <!--修改颜色-->
+    <update id="modifyColor" parameterType="color">
+
+        update color set COLOR = #{color} where CID=#{cid}
+
+    </update>
+
+    <!--修改内存价格-->
+    <update id="modifySize" parameterType="size">
+
+         update disk set PRICE = #{price} where DID=#{did}
+
+    </update>
+
+    <!--修改信息-->
+    <update id="modifyCommodity" parameterType="commodity">
+
+         update commodity set COMMODITY_NAME = #{commodity_name},COMMODITY_PRICE=#{commodity_price},COMMODITY_BRAND=#{commodity_brand},COMMODITY_BRAND_ID=#{commodity_brand_id},COMMODITY_COUNT=#{commodity_count} where COMMODITY_ID=#{commodity_id}
+
+    </update>
+
+
+    <!--查询无评测商品-->
+    <select id="CommoditysNoTest" resultType="commodity">
+
+        SELECT
+            commodity.COMMODITY_ID,
+            commodity.COMMODITY_NAME,
+            commodity.COMMODITY_BRAND,
+            commodity.COMMODITY_CATEGORY
+        FROM
+            commodity
+        WHERE
+            COMMODITY_ID
+        NOT IN(
+            SELECT
+                COMMODITY_ID
+            FROM
+                test)
+
+    </select>
+
+    <!--添加文字评测-->
+    <insert id="addText" parameterType="test">
+
+        insert into test (COMMODITY_ID,TEST_ID,TEST_FACADE_BODY,TEST_UI_BODY,TEST_PROPERTY_BODY,TEST_PHOTO_BODY,TEST_OVER_BODY) values (#{commodity_id},#{test_id},#{test_facade_body},#{test_ui_body},#{test_property_body},#{test_photo_body},#{test_over_body})
+
+    </insert>
+    <!--添加外观图片-->
+    <insert id="addFacadePhoto" parameterType="test_facade_photo">
+
+        insert into test_facade_photo (TEST_ID,TEST_FACADE_PHOTO)values (#{test_id},#{test_facade_photo})
+
+    </insert>
+    <!--添加UI图片-->
+    <insert id="addUIPhoto" parameterType="test_ui_photo">
+
+        insert into test_ui_photo (TEST_ID,TEST_UI_PHOTO)values (#{test_id},#{test_ui_photo})
+
+    </insert>
+    <!--添加性能图片-->
+    <insert id="addPropertyPhoto" parameterType="test_property_photo">
+
+        insert into test_property_photo (TEST_ID,TEST_PROPERTY_PHOTO)values (#{test_id},#{test_property_photo})
+
+    </insert>
+    <!--添加相机图片-->
+    <insert id="addPhotoPhoto" parameterType="test_photo_photo">
+
+        insert into test_photo_photo (TEST_ID,TEST_PHOTO_PHOTO)values (#{test_id},#{test_photo_photo})
+
+    </insert>
+
+    <!--删除评测-->
+    <delete id="delText" parameterType="int">
+
+       delete FROM test where TEST_ID=#{test_id}
+
+    </delete>
+
+    <delete id="delFacadePhoto" parameterType="int">
+
+       delete FROM test_facade_photo where TEST_ID=#{test_id}
+
+    </delete>
+
+    <delete id="delUIPhoto" parameterType="int">
+
+       delete FROM test_ui_photo where TEST_ID=#{test_id}
+
+    </delete>
+
+    <delete id="delPropertyPhoto" parameterType="int">
+
+       delete FROM test_property_photo where TEST_ID=#{test_id}
+
+    </delete>
+
+    <delete id="delPhotoPhoto" parameterType="int">
+
+       delete FROM test_photo_photo where TEST_ID=#{test_id}
+
+    </delete>
+    <!--查询全部订单-->
+    <select id="AllAdminCart" resultType="cart">
+
+        SELECT
+        commodity.COMMODITY_NAME,
+        commodity.COMMODITY_ID,
+        commodity.COMMODITY_BRAND,
+        commodity.COMMODITY_PHOTO1,
+        cart.CART_ID,
+        cart.USER_ID,
+        cart.COMMODITY_SIZE,
+        cart.COMMODITY_PRICE,
+        address.ADDRESS_ID,
+        address.`NAME`,
+        address.ADDRESS,
+        address.USER_PHONE,
+        cart.STATE2 AS STATE,
+        cart.COURIER_NUM,
+        cart.NUM,
+        color.COLOR as commodity_color
+        FROM
+        cart
+        INNER JOIN commodity ON cart.COMMODITY_ID = commodity.COMMODITY_ID
+        INNER JOIN address ON cart.ADDRESS_ID = address.ADDRESS_ID
+        INNER JOIN color ON color.COMMODITY_ID = commodity.COMMODITY_ID
+        AND cart.COMMODITY_COLOR = color.CID
+        <where>
+            <if test="state!=0">
+                and cart.ADDRESS_ID IS NOT NULL AND
+                cart.STATE IS NOT NULL AND
+                cart.STATE2=#{state}
+            </if>
+        </where>
+
+
+    </select>
+
+    <!--全部订单分类-->
+    <select id="allOrderType" resultType="order">
+
+        select * from order_type
+
+    </select>
+
+
+</mapper>

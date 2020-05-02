@@ -1,0 +1,579 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dfbz.mapper.UserMapper">
+
+    <!--用户登录-->
+    <select id="login" resultType="user">
+
+        select * from user where USER_EMAIL = #{user_email}
+
+    </select>
+    <!--查询全部用户-->
+    <select id="AllUser" resultType="user">
+
+        select * from user
+
+    </select>
+    <!--添加用户-->
+    <insert id="AddUser" parameterType="user">
+
+       insert into user set USER_ID=#{user_id},USER_NAME=#{user_name},USER_PHONE=#{user_phone},USER_PHOTO=#{user_photo},USER_EMAIL=#{user_email}
+
+    </insert>
+
+    <!--主页推荐手机-->
+    <select id="IndexPhone" resultType="commodity">
+         select * from commodity where COMMODITY_CATEGORY_ID = 1
+    </select>
+    <!--主页推荐Switch-->
+    <select id="IndexGame" resultType="commodity">
+        select * from commodity where COMMODITY_ID = 13
+    </select>
+    <!--主页推荐笔记本-->
+    <select id="IndexLaptop" resultType="commodity">
+        select * from commodity where COMMODITY_CATEGORY_ID = 5
+    </select>
+    <!--显示类别-->
+    <select id="CATEGORY" resultType="category">
+        select * from category where CATEGORY_ID=#{category_id}
+    </select>
+    <!--全部商品-->
+    <select id="ALLCommodity" resultType="commodity">
+        SELECT commodity.COMMODITY_ID,commodity.COMMODITY_BRAND,commodity.COMMODITY_NAME,commodity.COMMODITY_COUNT,commodity.COMMODITY_PRICE,commodity.COMMODITY_PHOTO1 FROM commodity WHERE commodity.COMMODITY_CATEGORY_ID=#{commodity_category_id}
+    </select>
+    <!--查询商品brand-->
+    <select id="Brands" resultType="brand">
+
+        SELECT
+           brand.BRAND_NAME,
+           brand.BRAND_ID,
+           category.CATEGORY_ID
+        FROM
+           brand
+        INNER JOIN b_c ON b_c.BRAND_ID = brand.BRAND_ID
+        INNER JOIN category ON b_c.CATEGORY_ID = category.CATEGORY_ID
+        WHERE
+           category.CATEGORY_ID = #{commodity_category_id}
+
+
+    </select>
+
+    <select id="Brand_Commodity" resultType="commodity">
+
+        SELECT
+            commodity.COMMODITY_ID,
+            commodity.COMMODITY_NAME,
+            commodity.COMMODITY_PRICE,
+            commodity.COMMODITY_BRAND,
+            commodity.COMMODITY_PHOTO1
+        FROM
+            commodity
+        WHERE
+            commodity.COMMODITY_CATEGORY_ID = #{commodity_category_id}
+        AND
+            commodity.COMMODITY_BRAND_ID = #{brand_id}
+
+    </select>
+
+    <!--查询商品详情-->
+    <select id="COMMODITY_Detailed" resultType="commodity">
+
+        SELECT * FROM commodity WHERE commodity.COMMODITY_ID=#{commodity_id}
+
+    </select>
+
+    <!--查询商品评价-->
+    <select id="Comment_ByID" resultType="comment">
+
+        SELECT
+          `user`.USER_NAME,
+          `comment`.`COMMENT`,
+          `comment`.COMMENT_TYPE
+        FROM
+          `comment`
+        INNER JOIN `user` ON `comment`.USER_ID = `user`.USER_ID
+        INNER JOIN commodity ON `comment`.COMMODITY_ID = commodity.COMMODITY_ID
+        WHERE
+           `comment`.COMMODITY_ID = #{commodity_id}
+
+
+    </select>
+
+    <!--查询商品颜色-->
+    <select id="Size_color" resultType="color">
+
+       SELECT
+           color.CID,
+           color.COLOR
+       FROM
+           color
+       INNER JOIN commodity ON color.COMMODITY_ID = commodity.COMMODITY_ID
+       WHERE
+           commodity.COMMODITY_ID = #{commodity_id}
+
+
+    </select>
+
+    <!--查询商品内存-->
+    <select id="Size_disk" resultType="size">
+
+     SELECT
+       disk.DISK
+     FROM
+        commodity
+    INNER JOIN disk ON disk.COMMODITY_ID = commodity.COMMODITY_ID
+    WHERE
+        commodity.COMMODITY_ID = #{commodity_id}
+
+
+    </select>
+
+    <!--根据内存改变价格-->
+    <select id="PriceBySize" resultType="size">
+    SELECT
+       disk.PRICE
+    FROM
+       commodity
+    INNER JOIN disk ON disk.COMMODITY_ID = commodity.COMMODITY_ID
+    WHERE
+        commodity.COMMODITY_ID =#{commodity_id} AND
+        disk.DISK = #{disk}
+
+    </select>
+
+
+    <!--查询商品详情图片-->
+    <select id="Describe" resultType="describe">
+
+    SELECT
+       `describe`.COMMODITY_DESCRIBE
+    FROM
+        commodity
+    INNER JOIN `describe` ON `describe`.COMMODITY_ID = commodity.COMMODITY_ID
+    WHERE
+        commodity.COMMODITY_ID = #{commodity_id}
+
+
+    </select>
+
+    <!--添加商品到购物车-->
+    <insert id="addCart" parameterType="cart">
+
+        INSERT into cart SET COMMODITY_ID=#{commodity_id},USER_ID=#{user_id},COMMODITY_COLOR=#{commodity_color},COMMODITY_SIZE=#{commodity_size},COMMODITY_PRICE=#{commodity_price},STATE=5;
+
+    </insert>
+    <!--直接购买商品-->
+    <insert id="addpay" parameterType="cart">
+
+        INSERT into cart SET COMMODITY_ID=#{commodity_id},USER_ID=#{user_id},COMMODITY_COLOR=#{commodity_color},COMMODITY_SIZE=#{commodity_size},COMMODITY_PRICE=#{commodity_price},STATE=6;
+
+    </insert>
+    <!--查询用户最新下单的商品-->
+    <select id="max_commodity" resultType="cart">
+
+        SELECT
+	        commodity.COMMODITY_ID,
+	        commodity.COMMODITY_NAME,
+	        commodity.COMMODITY_BRAND,
+	        commodity.COMMODITY_PHOTO1,
+	        cart.COMMODITY_PRICE,
+	        color.COLOR,
+	        cart.COMMODITY_SIZE,
+	        cart.CART_ID,
+            cart.STATE,
+            cart.NUM
+        FROM
+	        commodity
+        INNER JOIN cart ON cart.COMMODITY_ID = commodity.COMMODITY_ID
+        INNER JOIN color ON color.COMMODITY_ID = commodity.COMMODITY_ID
+        AND cart.COMMODITY_COLOR = color.CID
+        WHERE
+	        CART_ID = (SELECT MAX(CART_ID) FROM cart)
+        AND cart.USER_ID = #{user_id}
+        AND cart.STATE = 6
+        AND cart.ADDRESS_ID IS NULL
+
+
+    </select>
+
+    <!--支付完成后将订单内容添加到待发货订单下-->
+    <insert id="payOver" parameterType="status">
+
+        insert into status set USER_ID=#{user_id},COMMODITY_ID=#{commodity_id},STATE=#{state},COLOR=#{color},DISK=#{disk},ADDRESS_ID=#{address_id}
+
+    </insert>
+
+    <!--添加评论-->
+    <insert id="addComment" parameterType="comment">
+
+        insert into comment set COMMODITY_ID=#{commodity_id},USER_ID=#{user_id},COMMENT=#{comment},COMMENT_TYPE=#{comment_type}
+
+    </insert>
+
+    <!--添加地址-->
+    <insert id="addAdderss" parameterType="address">
+
+        insert into address set USER_ID=#{user_id},USER_PHONE=#{user_phone},ADDRESS=#{address},NAME=#{name}
+
+    </insert>
+
+    <update id="modifyMy" parameterType="user">
+
+        update user set USER_NAME=#{user_name},USER_PHOTO=#{user_photo} where USER_ID=#{user_id}
+
+    </update>
+
+    <!--查询购物车-->
+    <select id="allCart" resultType="cart">
+
+       SELECT
+           commodity.COMMODITY_ID,
+           commodity.COMMODITY_NAME,
+           commodity.COMMODITY_BRAND,
+           commodity.COMMODITY_PHOTO1,
+           cart.COMMODITY_PRICE,
+           color.COLOR,
+           cart.COMMODITY_SIZE,
+           cart.CART_ID,
+           cart.STATE,
+           cart.NUM
+       FROM
+           commodity
+       INNER JOIN cart ON cart.COMMODITY_ID = commodity.COMMODITY_ID
+       INNER JOIN color ON color.COMMODITY_ID = commodity.COMMODITY_ID AND cart.COMMODITY_COLOR = color.CID
+       WHERE
+            cart.USER_ID = #{user_id}
+       AND
+            cart.STATE = 5
+
+    </select>
+
+    <!--查询商品数和总金额-->
+    <select id="count" resultType="count">
+
+      SELECT
+            Sum(cart.NUM) AS count ,
+            Sum(cart.COMMODITY_PRICE*cart.NUM) AS sum
+        FROM
+            cart
+        WHERE
+            cart.USER_ID = #{user_id}
+        AND
+            cart.STATE = 5
+
+    </select>
+
+
+    <!--购物车付款-->
+    <update id="cartPayOver" parameterType="int">
+
+        UPDATE cart SET STATE=#{state},CART='' WHERE USER_ID=#{user_id} AND CART=#{cart}
+
+    </update>
+
+
+    <!--删除购物车内容-->
+    <delete id="cartDel" parameterType="int">
+
+        DELETE FROM cart WHERE cart_id=#{cart_id}
+
+    </delete>
+
+    <delete id="delAddress" parameterType="int">
+
+        delete from address where ADDRESS_ID=#{address_id}
+
+    </delete>
+
+    <!--点击提交订单后将用户地址添加到cart表-->
+    <update id="addRessInCart">
+
+        update cart set ADDRESS_ID=#{address_id} where USER_ID=#{user_id} and STATE=5
+
+    </update>
+
+    <update id="addRessInCartbyId">
+
+        update cart set ADDRESS_ID=#{address_id} where USER_ID=#{user_id} and STATE=6 and CART_ID=#{cart_id}
+
+    </update>
+
+    <!--查询地址-->
+    <select id="addRess" resultType="address">
+
+        select * from address where user_id=#{user_id}
+
+    </select>
+
+
+    <!--确认收货-->
+    <update id="ConfirmReceipt" parameterType="int">
+
+        update cart set STATE2 = #{state} where CART_ID= #{cart_id}
+
+    </update>
+
+    <!--购物车成功-->
+    <update id="modifyOrders" parameterType="int">
+
+        update cart set STATE=#{state} WHERE USER_ID=#{user_id} and STATE=5
+
+    </update>
+
+    <!--购物成功-->
+    <update id="modifyOrdersById" parameterType="int">
+
+        update cart set STATE=#{state} WHERE USER_ID=#{user_id} and STATE=6 and CART_ID=#{cart_id}
+
+    </update>
+
+    <!--状态订单-->
+    <select id="noPay" resultType="cart">
+
+SELECT
+	commodity.COMMODITY_NAME,
+	commodity.COMMODITY_ID,
+	commodity.COMMODITY_BRAND,
+	commodity.COMMODITY_PHOTO1,
+	cart.CART_ID,
+	cart.COMMODITY_SIZE,
+	cart.COMMODITY_PRICE,
+	address.`NAME`,
+	address.ADDRESS,
+	address.USER_PHONE,
+	cart.STATE,
+	cart.COURIER_NUM,
+	cart.NUM,
+	color.COLOR as commodity_color
+FROM
+	cart
+INNER JOIN commodity ON cart.COMMODITY_ID = commodity.COMMODITY_ID
+INNER JOIN address ON cart.ADDRESS_ID = address.ADDRESS_ID
+INNER JOIN color ON color.COMMODITY_ID = commodity.COMMODITY_ID
+AND cart.COMMODITY_COLOR = color.CID
+WHERE
+	cart.USER_ID =#{user_id}
+AND cart.ADDRESS_ID IS NOT NULL
+AND cart.STATE2 = #{state}
+
+    </select>
+
+    <!--查询待付款订单-->
+    <select id="noPayById" resultType="cart">
+        SELECT
+	commodity.COMMODITY_NAME,
+	commodity.COMMODITY_ID,
+	commodity.COMMODITY_BRAND,
+	commodity.COMMODITY_PHOTO1,
+	cart.CART_ID,
+	cart.COMMODITY_SIZE,
+	cart.COMMODITY_PRICE,
+	address.`NAME`,
+	address.ADDRESS,
+	address.USER_PHONE,
+	cart.STATE,
+	cart.COURIER_NUM,
+	cart.NUM,
+	color.COLOR AS commodity_color
+FROM
+	cart
+INNER JOIN commodity ON cart.COMMODITY_ID = commodity.COMMODITY_ID
+INNER JOIN address ON cart.ADDRESS_ID = address.ADDRESS_ID
+INNER JOIN color ON color.COMMODITY_ID = commodity.COMMODITY_ID
+AND cart.COMMODITY_COLOR = color.CID
+WHERE
+	cart.USER_ID = #{user_id}
+AND cart.ADDRESS_ID IS NOT NULL
+AND cart.STATE = 6
+AND cart.STATE2 IS NULL
+    </select>
+    <!--根据订单号查询待支付订单-->
+    <select id="noPayByCartId" resultType="cart">
+
+          SELECT
+	commodity.COMMODITY_NAME,
+	commodity.COMMODITY_ID,
+	commodity.COMMODITY_BRAND,
+	commodity.COMMODITY_PHOTO1,
+	cart.CART_ID,
+	cart.COMMODITY_SIZE,
+	cart.COMMODITY_PRICE,
+	address.`NAME`,
+	address.ADDRESS,
+	address.USER_PHONE,
+	cart.STATE,
+	cart.COURIER_NUM,
+	color.COLOR AS commodity_color
+FROM
+	cart
+INNER JOIN commodity ON cart.COMMODITY_ID = commodity.COMMODITY_ID
+INNER JOIN address ON cart.ADDRESS_ID = address.ADDRESS_ID
+INNER JOIN color ON color.COMMODITY_ID = commodity.COMMODITY_ID
+AND cart.COMMODITY_COLOR = color.CID
+WHERE
+	cart.USER_ID = #{user_id}
+AND cart.CART_ID = #{cart_id}
+AND cart.ADDRESS_ID IS NOT NULL
+AND cart.STATE2 IS NULL
+
+    </select>
+
+    <!--待发货-->
+    <select id="nofa" resultType="cart">
+
+SELECT
+	commodity.COMMODITY_NAME,
+	commodity.COMMODITY_ID,
+	commodity.COMMODITY_BRAND,
+	commodity.COMMODITY_PHOTO1,
+	cart.CART_ID,
+	cart.COMMODITY_SIZE,
+	cart.COMMODITY_PRICE,
+	address.`NAME`,
+	address.ADDRESS,
+	address.USER_PHONE,
+	cart.STATE,
+	cart.COURIER_NUM,
+	cart.NUM,
+	color.COLOR as commodity_color
+FROM
+	cart
+INNER JOIN commodity ON cart.COMMODITY_ID = commodity.COMMODITY_ID
+INNER JOIN address ON cart.ADDRESS_ID = address.ADDRESS_ID
+INNER JOIN color ON color.COMMODITY_ID = commodity.COMMODITY_ID
+AND cart.COMMODITY_COLOR = color.CID
+WHERE
+	cart.USER_ID =#{user_id}
+AND cart.ADDRESS_ID IS NOT NULL
+AND cart.STATE = #{state}
+AND cart.STATE2 IS NULL
+
+    </select>
+
+    <!--全部订单-->
+    <select id="allOrders" resultType="cart">
+SELECT
+	commodity.COMMODITY_NAME,
+	commodity.COMMODITY_ID,
+	commodity.COMMODITY_BRAND,
+	commodity.COMMODITY_PHOTO1,
+	cart.CART_ID,
+	cart.COMMODITY_SIZE,
+	cart.COMMODITY_PRICE,
+	address.ADDRESS_ID,
+	address.`NAME`,
+	address.ADDRESS,
+	address.USER_PHONE,
+	cart.STATE2 AS STATE,
+	cart.STATE AS STATE2,
+	cart.COURIER_NUM,
+	cart.NUM,
+	color.COLOR as commodity_color
+FROM
+	cart
+INNER JOIN commodity ON cart.COMMODITY_ID = commodity.COMMODITY_ID
+INNER JOIN address ON cart.ADDRESS_ID = address.ADDRESS_ID
+INNER JOIN color ON color.COMMODITY_ID = commodity.COMMODITY_ID
+AND cart.COMMODITY_COLOR = color.CID
+WHERE
+cart.USER_ID = #{user_id} AND
+cart.ADDRESS_ID IS NOT NULL AND
+cart.STATE IS NOT NULL AND
+cart.STATE != 5
+
+    </select>
+
+
+    <!--产品文字评测-->
+    <select id="TESTS" resultType="test">
+     SELECT
+        commodity.COMMODITY_ID,
+        commodity.COMMODITY_NAME,
+        commodity.COMMODITY_BRAND,
+        test.TEST_FACADE_BODY,
+        test.TEST_UI_BODY,
+        test.TEST_PROPERTY_BODY,
+        test.TEST_PHOTO_BODY,
+        test.TEST_OVER_BODY,
+        test.TEST_OVER_PHOTO
+     FROM
+        test
+     INNER JOIN commodity ON test.COMMODITY_ID = commodity.COMMODITY_ID
+     WHERE
+        test.COMMODITY_ID = #{commodity_id}
+    </select>
+    <!--评测图-->
+    <select id="TEST_FACADE_PHOTOS" resultType="test_facade_photo">
+    SELECT
+        test_facade_photo.TEST_FACADE_PHOTO
+    FROM
+        test_facade_photo
+    INNER JOIN test ON test_facade_photo.TEST_ID = test.TEST_ID
+    WHERE
+        test.TEST_ID = #{commodity_id}
+
+    </select>
+    <select id="TEST_PHOTO_PHOTOS" resultType="test_photo_photo">
+    SELECT
+        test_photo_photo.TEST_PHOTO_PHOTO
+    FROM
+        test_photo_photo
+    INNER JOIN test ON test_photo_photo.TEST_ID = test.TEST_ID
+    WHERE
+        test.TEST_ID = #{commodity_id}
+
+
+    </select>
+    <select id="TEST_PROPERTY_PHOTOS" resultType="test_property_photo">
+     SELECT
+         test_property_photo.TEST_PROPERTY_PHOTO
+     FROM
+         test
+     INNER JOIN test_property_photo ON test_property_photo.TEST_ID = test.TEST_ID
+     WHERE
+         test.TEST_ID = #{commodity_id}
+
+
+    </select>
+    <select id="TEST_UI_PHOTOS" resultType="test_ui_photo">
+    SELECT
+        test_ui_photo.TEST_UI_PHOTO
+    FROM
+        test
+    INNER JOIN test_ui_photo ON test_ui_photo.TEST_ID = test.TEST_ID
+    WHERE
+        test.TEST_ID = #{commodity_id}
+
+    </select>
+    <!--商品库存-->
+    <update id="numMod" parameterType="int">
+
+        UPDATE commodity SET commodity.COMMODITY_COUNT=#{numb} WHERE COMMODITY_ID=#{commodity_id}
+
+    </update>
+
+    <!--购物车加减-->
+    <update id="numPrice" parameterType="int">
+
+        UPDATE cart set NUM=#{num} where CART_ID=#{cart_id}
+
+    </update>
+
+    <!--查询购物车数量-->
+    <select id="num" resultType="Cart">
+
+        select cart.NUM from cart where CART_ID=#{cart_id}
+
+    </select>
+
+    <!--查询购物车-->
+    <select id="cartBycommodity" resultType="cart">
+
+        select * from cart where COMMODITY_ID=#{commodity_id} and USER_ID=#{user_id} and COMMODITY_SIZE=#{commodity_size} and COMMODITY_COLOR=#{commodity_color} and STATE = 5
+
+    </select>
+
+
+</mapper>
